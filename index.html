@@ -777,22 +777,21 @@ function drawConnectors() {
       const isWinnerTop = topM.querySelector('.slot.winner') !== null;
       const isWinnerBot = botM.querySelector('.slot.winner') !== null;
 
-      let d;
+      const midY = (top.cy + bot.cy) / 2;
+      const nextHasWinner = nextM.querySelector('.slot.winner') !== null;
+
       if (side === 'left') {
-        const midX = (top.right + nxt.left) / 2;
-        // Top arm
-        addPath(svg, `M${top.right},${top.cy} H${midX} V${(top.cy + bot.cy) / 2}`, isWinnerTop);
-        // Bottom arm
-        addPath(svg, `M${bot.right},${bot.cy} H${midX} V${(top.cy + bot.cy) / 2}`, isWinnerBot);
-        // Center line to next match
-        const nextHasWinner = nextM.querySelector('.slot.winner') !== null;
-        addPath(svg, `M${midX},${(top.cy + bot.cy) / 2} H${nxt.left}`, nextHasWinner);
+        // Position the vertical pair connector close to the NEXT match so the
+        // outgoing horizontal stubs from each match are long and prominent.
+        const midX = nxt.left - 8;
+        addPath(svg, `M${top.right},${top.cy} H${midX} V${midY}`, isWinnerTop);
+        addPath(svg, `M${bot.right},${bot.cy} H${midX} V${midY}`, isWinnerBot);
+        addPath(svg, `M${midX},${midY} H${nxt.left}`, nextHasWinner);
       } else {
-        const midX = (top.left + nxt.right) / 2;
-        addPath(svg, `M${top.left},${top.cy} H${midX} V${(top.cy + bot.cy) / 2}`, isWinnerTop);
-        addPath(svg, `M${bot.left},${bot.cy} H${midX} V${(top.cy + bot.cy) / 2}`, isWinnerBot);
-        const nextHasWinner = nextM.querySelector('.slot.winner') !== null;
-        addPath(svg, `M${midX},${(top.cy + bot.cy) / 2} H${nxt.right}`, nextHasWinner);
+        const midX = nxt.right + 8;
+        addPath(svg, `M${top.left},${top.cy} H${midX} V${midY}`, isWinnerTop);
+        addPath(svg, `M${bot.left},${bot.cy} H${midX} V${midY}`, isWinnerBot);
+        addPath(svg, `M${midX},${midY} H${nxt.right}`, nextHasWinner);
       }
     }
   });
