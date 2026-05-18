@@ -398,39 +398,42 @@
   }
   .slot.loser .seed { opacity: 0.4; }
 
-  /* ─── CONNECTORS ─── */
-  /* Outgoing line spans the FULL 50px gap so it connects to the next column's left edge */
-  .col[data-side="left"] .match::after {
-    content: ''; position: absolute;
-    right: -50px; top: 50%;
-    width: 50px; height: 1px;
-    background: var(--line);
-    box-shadow: 0 0 4px rgba(77, 208, 225, 0.5);
+  /* ─── CONNECTORS (drawn via SVG overlay — see #connectors) ─── */
+  .bracket-wrap {
+    position: relative;
+    margin-top: 26px;
   }
-  /* LEFT SIDE: vertical pair connector at the END of outgoing line (column boundary) */
-  .col[data-side="left"] .match.pair-top::before {
-    content: ''; position: absolute;
-    right: -50px; top: 50%;
-    width: 1px; height: var(--pair-gap, 110px);
-    background: var(--line);
-    box-shadow: 0 0 4px rgba(77, 208, 225, 0.5);
+  .bracket-wrap .bracket {
+    margin-top: 0;
+    position: relative;
+    z-index: 1;
   }
-
-  /* RIGHT SIDE: horizontal line goes LEFT from match left edge */
-  .col[data-side="right"] .match::before {
-    content: ''; position: absolute;
-    left: -50px; top: 50%;
-    width: 50px; height: 1px;
-    background: var(--line);
-    box-shadow: 0 0 4px rgba(77, 208, 225, 0.5);
+  #connectors {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+    overflow: visible;
   }
-  /* RIGHT SIDE: vertical pair connector on the LEFT */
-  .col[data-side="right"] .match.pair-top::after {
-    content: ''; position: absolute;
-    left: -50px; top: 50%;
-    width: 1px; height: var(--pair-gap, 110px);
-    background: var(--line);
-    box-shadow: 0 0 4px rgba(77, 208, 225, 0.5);
+  #connectors path {
+    fill: none;
+    stroke: url(#connector-grad);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: url(#connector-glow);
+  }
+  #connectors path.winner-path {
+    stroke: url(#connector-grad-winner);
+    stroke-width: 2.5;
+    filter: url(#connector-glow-strong);
+  }
+  #connectors path.gold-path {
+    stroke: var(--gold);
+    stroke-width: 2.5;
+    filter: url(#connector-glow-gold);
   }
 
   /* ─── CENTER: Final only (Champion is above bracket) ─── */
@@ -553,7 +556,43 @@
     </div>
   </div>
 
-  <div class="bracket" id="bracket"></div>
+  <div class="bracket-wrap">
+    <svg id="connectors" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="connector-grad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stop-color="#4dd0e1" stop-opacity="0.9"/>
+          <stop offset="50%"  stop-color="#4dd0e1" stop-opacity="0.7"/>
+          <stop offset="100%" stop-color="#4dd0e1" stop-opacity="0.9"/>
+        </linearGradient>
+        <linearGradient id="connector-grad-winner" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stop-color="#7fe7f2"/>
+          <stop offset="100%" stop-color="#4dd0e1"/>
+        </linearGradient>
+        <filter id="connector-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.6" result="b"/>
+          <feMerge>
+            <feMergeNode in="b"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <filter id="connector-glow-strong" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2.6" result="b"/>
+          <feMerge>
+            <feMergeNode in="b"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <filter id="connector-glow-gold" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="b"/>
+          <feMerge>
+            <feMergeNode in="b"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+    </svg>
+    <div class="bracket" id="bracket"></div>
+  </div>
 
   <footer>
     <div class="info-pills">
@@ -684,7 +723,112 @@ function render() {
   // Update champion strip above bracket
   const champNameEl = document.getElementById('championName');
   if (champNameEl) champNameEl.textContent = championName();
+
+  // Draw SVG bracket connectors after layout settles
+  requestAnimationFrame(drawConnectors);
 }
+
+/* ─── SVG bracket connectors ─── */
+function drawConnectors() {
+  const svg = document.getElementById('connectors');
+  const bracket = document.getElementById('bracket');
+  if (!svg || !bracket) return;
+
+  const bRect = bracket.getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${bRect.width} ${bRect.height}`);
+
+  // Remove old paths (keep defs)
+  Array.from(svg.querySelectorAll('path')).forEach(p => p.remove());
+
+  const matchPos = (el) => {
+    const r = el.getBoundingClientRect();
+    return {
+      left:   r.left   - bRect.left,
+      right:  r.right  - bRect.left,
+      top:    r.top    - bRect.top,
+      bottom: r.bottom - bRect.top,
+      cy: (r.top + r.bottom) / 2 - bRect.top,
+    };
+  };
+
+  // R16 → QF and QF → SF on each side
+  const SIDE_PAIRS = [
+    { side: 'left',  round: 'r16', next: 'qf' },
+    { side: 'left',  round: 'qf',  next: 'sf' },
+    { side: 'right', round: 'r16', next: 'qf' },
+    { side: 'right', round: 'qf',  next: 'sf' },
+  ];
+
+  SIDE_PAIRS.forEach(({ side, round, next }) => {
+    const matches = document.querySelectorAll(`.col-${round}[data-side="${side}"] .match`);
+    const nextMatches = document.querySelectorAll(`.col-${next}[data-side="${side}"] .match`);
+    if (!matches.length || !nextMatches.length) return;
+
+    for (let i = 0; i < matches.length; i += 2) {
+      const topM = matches[i];
+      const botM = matches[i + 1];
+      const nextM = nextMatches[i / 2];
+      if (!topM || !botM || !nextM) continue;
+
+      const top  = matchPos(topM);
+      const bot  = matchPos(botM);
+      const nxt  = matchPos(nextM);
+
+      const isWinnerTop = topM.querySelector('.slot.winner') !== null;
+      const isWinnerBot = botM.querySelector('.slot.winner') !== null;
+
+      let d;
+      if (side === 'left') {
+        const midX = (top.right + nxt.left) / 2;
+        // Top arm
+        addPath(svg, `M${top.right},${top.cy} H${midX} V${(top.cy + bot.cy) / 2}`, isWinnerTop);
+        // Bottom arm
+        addPath(svg, `M${bot.right},${bot.cy} H${midX} V${(top.cy + bot.cy) / 2}`, isWinnerBot);
+        // Center line to next match
+        const nextHasWinner = nextM.querySelector('.slot.winner') !== null;
+        addPath(svg, `M${midX},${(top.cy + bot.cy) / 2} H${nxt.left}`, nextHasWinner);
+      } else {
+        const midX = (top.left + nxt.right) / 2;
+        addPath(svg, `M${top.left},${top.cy} H${midX} V${(top.cy + bot.cy) / 2}`, isWinnerTop);
+        addPath(svg, `M${bot.left},${bot.cy} H${midX} V${(top.cy + bot.cy) / 2}`, isWinnerBot);
+        const nextHasWinner = nextM.querySelector('.slot.winner') !== null;
+        addPath(svg, `M${midX},${(top.cy + bot.cy) / 2} H${nxt.right}`, nextHasWinner);
+      }
+    }
+  });
+
+  // SF → Final (each side: single horizontal line)
+  const finalMatch = document.querySelector('.col-center .final-match .match');
+  if (finalMatch) {
+    const fin = matchPos(finalMatch);
+    ['left', 'right'].forEach(side => {
+      const sf = document.querySelector(`.col-sf[data-side="${side}"] .match`);
+      if (!sf) return;
+      const a = matchPos(sf);
+      const sfHasWinner = sf.querySelector('.slot.winner') !== null;
+      const cls = sfHasWinner ? 'gold-path' : null;
+      if (side === 'left') {
+        addPath(svg, `M${a.right},${a.cy} H${fin.left}`, false, cls);
+      } else {
+        addPath(svg, `M${a.left},${a.cy} H${fin.right}`, false, cls);
+      }
+    });
+  }
+}
+
+function addPath(svg, d, isWinner, extraClass) {
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  p.setAttribute('d', d);
+  if (extraClass) p.setAttribute('class', extraClass);
+  else if (isWinner) p.setAttribute('class', 'winner-path');
+  svg.appendChild(p);
+}
+
+let _resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(drawConnectors, 80);
+});
 
 function renderSide(side, roundId, count, container) {
   const titles = { r16: 'OITAVAS', qf: 'QUARTAS', sf: 'SEMIS' };
