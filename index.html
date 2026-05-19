@@ -631,12 +631,12 @@
   <div class="header-frame">
     <header>
       <div class="crest">⚔</div>
-      <h1 contenteditable="true" spellcheck="false" data-key="title">TOURNAMENT <span class="accent">BRACKET</span></h1>
+      <h1 contenteditable="true" spellcheck="false" data-key="title">#1 ASHES OF WAR CHAMPIONSHIP <span class="accent">FINALS</span></h1>
       <div class="subtitle-row">
         <span class="subtitle-rule"></span>
         <span class="subtitle">
           <span class="diamond"></span>
-          <span contenteditable="true" spellcheck="false" data-key="subtitle">LIVE BRACKET — 16 PARTICIPANTS</span>
+          <span contenteditable="true" spellcheck="false" data-key="subtitle"></span>
           <span class="diamond"></span>
         </span>
         <span class="subtitle-rule"></span>
@@ -1186,6 +1186,12 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+function todayFormatted() {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  }).toUpperCase();
+}
+
 /* ─── Editable header bindings ─── */
 function bindContentEditable() {
   document.querySelectorAll('[contenteditable="true"][data-key]').forEach(el => {
@@ -1200,6 +1206,9 @@ function bindContentEditable() {
       } else {
         el.textContent = state.meta[key];
       }
+    } else if (key === 'subtitle' || key === 'date') {
+      // Auto-inject today's date as the default for subtitle + date pill
+      el.textContent = todayFormatted();
     }
     el.addEventListener('input', () => {
       if (key === 'title') state.meta[key] = el.innerHTML;
