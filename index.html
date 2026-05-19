@@ -554,6 +554,85 @@
   .final-match .slot.winner .seed { color: var(--gold); border-color: var(--gold); }
   .final-match .slot.winner .promote { background: var(--gold); border-color: var(--gold); color: #04101c; }
 
+  /* ─── BEST OF 3 section ─── */
+  .bo3 {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: linear-gradient(180deg, rgba(244, 193, 85, 0.05) 0%, rgba(0, 0, 0, 0.25) 100%);
+    border: 1px solid rgba(244, 193, 85, 0.35);
+    clip-path: polygon(0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+  .bo3-label {
+    text-align: center;
+    font-family: 'Saira Condensed', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.32em;
+    font-size: 10px;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .bo3-score {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 18px;
+    color: #d6e6f3;
+    margin-bottom: 10px;
+  }
+  .bo3-score .s {
+    min-width: 28px;
+    text-align: center;
+    padding: 2px 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--line-dim);
+    border-radius: 2px;
+  }
+  .bo3-score .s.lead { color: var(--gold); border-color: var(--gold); text-shadow: 0 0 8px rgba(244, 193, 85, 0.5); }
+  .bo3-score .vs { font-size: 11px; color: var(--text-dim); letter-spacing: 0.2em; }
+  .bo3-games {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+  .bo3-game {
+    display: flex; flex-direction: column;
+    align-items: center;
+    padding: 6px 4px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--line-dim);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .bo3-game:hover { border-color: var(--line); }
+  .bo3-game .lbl {
+    font-family: 'Saira Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    margin-bottom: 2px;
+  }
+  .bo3-game .res {
+    font-family: 'Saira Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    color: var(--text-dim);
+    line-height: 1;
+  }
+  .bo3-game.left  { background: linear-gradient(180deg, rgba(77, 208, 225, 0.25) 0%, rgba(77, 208, 225, 0.08) 100%); border-color: var(--line); }
+  .bo3-game.left  .lbl, .bo3-game.left  .res { color: #fff; }
+  .bo3-game.left  .res::after { content: ' L'; color: var(--line); }
+  .bo3-game.right { background: linear-gradient(180deg, rgba(77, 208, 225, 0.25) 0%, rgba(77, 208, 225, 0.08) 100%); border-color: var(--line); }
+  .bo3-game.right .lbl, .bo3-game.right .res { color: #fff; }
+  .bo3-game.right .res::after { content: ' R'; color: var(--line); }
+  .bo3-game.left .res::before  { content: '▶'; color: var(--line); margin-right: 2px; }
+  .bo3-game.right .res::before { content: '◀'; color: var(--line); margin-right: 2px; }
+
   /* ─── FOOTER ─── */
   footer {
     margin-top: 36px;
@@ -723,7 +802,8 @@ const emptyState = () => ({
   meta: {},
   left:  { players: Array(8).fill(''), winners: { r16: [null,null,null,null], qf: [null,null], sf: [null] } },
   right: { players: Array(8).fill(''), winners: { r16: [null,null,null,null], qf: [null,null], sf: [null] } },
-  final: { winner: null },  // 0 = leftFinalist, 1 = rightFinalist
+  // Best-of-3 final: each game is null (not played), 0 (left won) or 1 (right won)
+  final: { games: [null, null, null] },
 });
 
 function load() {
@@ -741,8 +821,13 @@ function load() {
         if (p[s].winners.sf?.length  === 1) base[s].winners.sf  = p[s].winners.sf;
       }
     });
-    if (p.final && (p.final.winner === 0 || p.final.winner === 1 || p.final.winner === null)) {
-      base.final.winner = p.final.winner;
+    if (p.final) {
+      if (Array.isArray(p.final.games) && p.final.games.length === 3) {
+        base.final.games = p.final.games.map(g => (g === 0 || g === 1) ? g : null);
+      } else if (typeof p.final.winner === 'number') {
+        // Migrate from old single-winner format: prefill 2 games to keep the existing champion
+        base.final.games = p.final.winner === 0 ? [0, 0, null] : [1, 1, null];
+      }
     }
     return base;
   } catch (e) { console.warn('load failed', e); return emptyState(); }
@@ -783,8 +868,21 @@ function rightFinalistName() {
   const sfNames = namesForSideRound('right', 'sf');
   return sfNames[w] || '';
 }
+function finalScore() {
+  let l = 0, r = 0;
+  state.final.games.forEach(g => { if (g === 0) l++; else if (g === 1) r++; });
+  return [l, r];
+}
+
+function finalWinnerSide() {
+  const [l, r] = finalScore();
+  if (l >= 2) return 0;
+  if (r >= 2) return 1;
+  return null;
+}
+
 function championName() {
-  const w = state.final.winner;
+  const w = finalWinnerSide();
   if (w === null) return '';
   return w === 0 ? leftFinalistName() : rightFinalistName();
 }
@@ -1070,11 +1168,14 @@ function renderCenter(container) {
   const playersEl = document.createElement('div');
   playersEl.className = 'players';
 
+  const [scoreL, scoreR] = finalScore();
+  const winnerSide = finalWinnerSide();
+
   for (let s = 0; s < 2; s++) {
     const slot = document.createElement('div');
     slot.className = 'slot';
-    if (state.final.winner === s) slot.classList.add('winner');
-    else if (state.final.winner !== null) slot.classList.add('loser');
+    if (winnerSide === s) slot.classList.add('winner');
+    else if (winnerSide !== null) slot.classList.add('loser');
 
     const seed = document.createElement('div');
     seed.className = 'seed';
@@ -1095,24 +1196,65 @@ function renderCenter(container) {
     input.tabIndex = -1;
     slot.appendChild(input);
 
-    const btn = document.createElement('button');
-    btn.className = 'promote';
-    btn.type = 'button';
-    btn.innerHTML = '✓';
-    btn.title = 'Crown as champion';
-    btn.disabled = !(finalNames[s] || '').trim();
-    btn.addEventListener('click', () => {
-      state.final.winner = (state.final.winner === s) ? null : s;
-      save();
-      render();
-    });
-    slot.appendChild(btn);
+    // Show per-finalist game wins instead of promote button (auto-derived from BO3 games)
+    const wins = document.createElement('div');
+    wins.className = 'seed';
+    wins.style.minWidth = '22px';
+    wins.textContent = String(s === 0 ? scoreL : scoreR);
+    if ((s === 0 && scoreL >= 2) || (s === 1 && scoreR >= 2)) {
+      wins.style.color = 'var(--gold)';
+      wins.style.borderColor = 'var(--gold)';
+    }
+    slot.appendChild(wins);
 
     playersEl.appendChild(slot);
   }
 
   matchEl.appendChild(playersEl);
   finalWrap.appendChild(matchEl);
+
+  // BEST OF 3 section
+  const bo3 = document.createElement('div');
+  bo3.className = 'bo3';
+
+  const bo3Label = document.createElement('div');
+  bo3Label.className = 'bo3-label';
+  bo3Label.textContent = 'BEST OF 3';
+  bo3.appendChild(bo3Label);
+
+  const bo3Score = document.createElement('div');
+  bo3Score.className = 'bo3-score';
+  bo3Score.innerHTML = `
+    <span class="s ${scoreL > scoreR ? 'lead' : ''}">${scoreL}</span>
+    <span class="vs">VS</span>
+    <span class="s ${scoreR > scoreL ? 'lead' : ''}">${scoreR}</span>
+  `;
+  bo3.appendChild(bo3Score);
+
+  const bo3Games = document.createElement('div');
+  bo3Games.className = 'bo3-games';
+  state.final.games.forEach((g, i) => {
+    const game = document.createElement('div');
+    game.className = 'bo3-game';
+    if (g === 0) game.classList.add('left');
+    else if (g === 1) game.classList.add('right');
+
+    game.innerHTML = `
+      <div class="lbl">GAME ${i + 1}</div>
+      <div class="res">${g === null ? '—' : ''}</div>
+    `;
+    game.title = 'Click to cycle: empty → Left wins → Right wins → empty';
+    game.addEventListener('click', () => {
+      const cur = state.final.games[i];
+      state.final.games[i] = cur === null ? 0 : cur === 0 ? 1 : null;
+      save();
+      render();
+    });
+    bo3Games.appendChild(game);
+  });
+  bo3.appendChild(bo3Games);
+
+  finalWrap.appendChild(bo3);
   inner.appendChild(finalWrap);
 
   col.appendChild(inner);
@@ -1152,9 +1294,6 @@ function renderDownstream() {
       const v = finalNames[i] || '';
       if (inp.value !== v) inp.value = v;
     });
-    centerCol.querySelectorAll('.final-match .promote').forEach((btn, i) => {
-      btn.disabled = !(finalNames[i] || '').trim();
-    });
   }
   // Update champion strip
   const champNameEl = document.getElementById('championName');
@@ -1174,8 +1313,8 @@ function clearDownstreamFrom(side, roundId, matchIdx) {
     });
     branches = [...new Set(branches.map(b => Math.floor(b / 2)))];
   }
-  // Also clear the final if SF changed (or any upstream round on this side)
-  state.final.winner = null;
+  // Also clear the final games if SF changed (or any upstream round on this side)
+  state.final.games = [null, null, null];
 }
 
 function svgShield() {
@@ -1253,11 +1392,15 @@ document.getElementById('exportBtn').addEventListener('click', () => {
     });
     lines.push('');
   });
-  lines.push('── FINAL ──');
+  lines.push('── FINAL (BEST OF 3) ──');
   const lf = leftFinalistName() || '(?)';
   const rf = rightFinalistName() || '(?)';
-  const fw = state.final.winner;
-  lines.push(`  ${fw === 0 ? '★ ' : '  '}${lf}  vs  ${fw === 1 ? '★ ' : '  '}${rf}`);
+  const [scoreL, scoreR] = finalScore();
+  const fw = finalWinnerSide();
+  lines.push(`  ${fw === 0 ? '★ ' : '  '}${lf}  ${scoreL} - ${scoreR}  ${fw === 1 ? '★ ' : '  '}${rf}`);
+  lines.push('  Games: ' + state.final.games.map((g, i) =>
+    `G${i+1}=${g === null ? '—' : g === 0 ? 'L' : 'R'}`
+  ).join('  '));
   lines.push('');
   lines.push('🏆 CHAMPION: ' + (championName() || '(TBD)'));
   const text = lines.join('\n');
