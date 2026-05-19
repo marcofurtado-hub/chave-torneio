@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chave do Campeonato</title>
+<title>Tournament Bracket</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
@@ -250,7 +250,7 @@
     text-shadow: 0 0 16px rgba(244, 193, 85, 0.4);
   }
   .champion-strip .name:empty::before {
-    content: '— A DEFINIR —';
+    content: '— TBD —';
     color: rgba(244, 193, 85, 0.35);
     font-style: italic; font-weight: 400;
     letter-spacing: 0.15em;
@@ -631,18 +631,18 @@
   <div class="header-frame">
     <header>
       <div class="crest">⚔</div>
-      <h1 contenteditable="true" spellcheck="false" data-key="title">CHAVE DO <span class="accent">CAMPEONATO</span></h1>
+      <h1 contenteditable="true" spellcheck="false" data-key="title">TOURNAMENT <span class="accent">BRACKET</span></h1>
       <div class="subtitle-row">
         <span class="subtitle-rule"></span>
         <span class="subtitle">
           <span class="diamond"></span>
-          <span contenteditable="true" spellcheck="false" data-key="subtitle">CHAVEAMENTO LIVE — 16 PARTICIPANTES</span>
+          <span contenteditable="true" spellcheck="false" data-key="subtitle">LIVE BRACKET — 16 PARTICIPANTS</span>
           <span class="diamond"></span>
         </span>
         <span class="subtitle-rule"></span>
       </div>
       <div class="help-banner">
-        Clique no nome do jogador pra editar. Use o botão <kbd>✓</kbd> ao lado pra avançar o vencedor pra próxima fase.
+        Click a player's name to edit. Use the <kbd>✓</kbd> button to advance the winner to the next round.
       </div>
     </header>
   </div>
@@ -650,7 +650,7 @@
   <div class="champion-strip" id="championStrip">
     <div class="crown">♛</div>
     <div class="info">
-      <div class="lbl">CAMPEÃO</div>
+      <div class="lbl">CHAMPION</div>
       <div class="name" id="championName"></div>
     </div>
   </div>
@@ -695,13 +695,13 @@
 
   <footer>
     <div class="info-pills">
-      <div class="pill"><span class="icon">📅</span><span contenteditable="true" spellcheck="false" data-key="date">DATA DO EVENTO</span></div>
-      <div class="pill"><span class="icon">⏰</span><span contenteditable="true" spellcheck="false" data-key="time">HORÁRIO</span></div>
-      <div class="pill"><span class="icon">🏆</span><span contenteditable="true" spellcheck="false" data-key="event">NOME DO EVENTO</span></div>
+      <div class="pill"><span class="icon">📅</span><span contenteditable="true" spellcheck="false" data-key="date">EVENT DATE</span></div>
+      <div class="pill"><span class="icon">⏰</span><span contenteditable="true" spellcheck="false" data-key="time">TIME</span></div>
+      <div class="pill"><span class="icon">🏆</span><span contenteditable="true" spellcheck="false" data-key="event">EVENT NAME</span></div>
     </div>
     <div class="actions">
-      <button class="btn" id="exportBtn">Exportar</button>
-      <button class="btn danger" id="resetBtn">Limpar tudo</button>
+      <button class="btn" id="exportBtn">Export</button>
+      <button class="btn danger" id="resetBtn">Clear all</button>
     </div>
   </footer>
 
@@ -929,8 +929,8 @@ window.addEventListener('resize', () => {
 });
 
 function renderSide(side, roundId, count, container) {
-  const titles = { r16: 'OITAVAS', qf: 'QUARTAS', sf: 'SEMIS' };
-  const labels = { r16: 'OF', qf: 'QF', sf: 'SF' };
+  const titles = { r16: 'ROUND OF 16', qf: 'QUARTERS', sf: 'SEMIS' };
+  const labels = { r16: 'R16', qf: 'QF', sf: 'SF' };
 
   const col = document.createElement('div');
   col.className = 'col col-' + roundId;
@@ -993,7 +993,7 @@ function renderSide(side, roundId, count, container) {
       input.type = 'text';
       if (roundId === 'r16') {
         input.value = state[side].players[slotIdx] || '';
-        input.placeholder = `Jogador ${slotIdx + 1}`;
+        input.placeholder = `Player ${slotIdx + 1}`;
         input.addEventListener('input', () => {
           state[side].players[slotIdx] = input.value;
           save();
@@ -1011,7 +1011,7 @@ function renderSide(side, roundId, count, container) {
       btn.className = 'promote';
       btn.type = 'button';
       btn.innerHTML = '✓';
-      btn.title = 'Marcar como vencedor';
+      btn.title = 'Mark as winner';
       const slotName = (names[slotIdx] || (roundId === 'r16' ? state[side].players[slotIdx] : '') || '').trim();
       btn.disabled = !slotName;
       btn.addEventListener('click', () => {
@@ -1074,7 +1074,7 @@ function renderCenter(container) {
 
     const seed = document.createElement('div');
     seed.className = 'seed';
-    seed.textContent = s === 0 ? 'E' : 'D';  // Esquerda / Direita
+    seed.textContent = s === 0 ? 'L' : 'R';  // Left / Right
     slot.appendChild(seed);
 
     const badge = document.createElement('div');
@@ -1086,7 +1086,7 @@ function renderCenter(container) {
     input.className = 'name-input';
     input.type = 'text';
     input.value = finalNames[s] || '';
-    input.placeholder = s === 0 ? 'Finalista Esq.' : 'Finalista Dir.';
+    input.placeholder = s === 0 ? 'Left Finalist' : 'Right Finalist';
     input.readOnly = true;
     input.tabIndex = -1;
     slot.appendChild(input);
@@ -1095,7 +1095,7 @@ function renderCenter(container) {
     btn.className = 'promote';
     btn.type = 'button';
     btn.innerHTML = '✓';
-    btn.title = 'Marcar como campeão';
+    btn.title = 'Crown as champion';
     btn.disabled = !(finalNames[s] || '').trim();
     btn.addEventListener('click', () => {
       state.final.winner = (state.final.winner === s) ? null : s;
@@ -1210,7 +1210,7 @@ function bindContentEditable() {
 
 /* ─── Actions ─── */
 document.getElementById('resetBtn').addEventListener('click', () => {
-  if (!confirm('Limpar todos os nomes e resultados? Essa ação não pode ser desfeita.')) return;
+  if (!confirm('Clear all names and results? This action cannot be undone.')) return;
   state = emptyState();
   localStorage.removeItem(STORAGE_KEY);
   location.reload();
@@ -1218,13 +1218,13 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 
 document.getElementById('exportBtn').addEventListener('click', () => {
   const lines = [];
-  const title = (document.querySelector('h1')?.textContent || 'CHAVE DO CAMPEONATO').trim();
+  const title = (document.querySelector('h1')?.textContent || 'TOURNAMENT BRACKET').trim();
   lines.push('═══ ' + title + ' ═══');
   lines.push('');
   ['left', 'right'].forEach(side => {
-    lines.push('▌ LADO ' + (side === 'left' ? 'ESQUERDO' : 'DIREITO') + ' ▐');
+    lines.push('▌ ' + (side === 'left' ? 'LEFT' : 'RIGHT') + ' SIDE ▐');
     ROUND_ORDER.forEach(rid => {
-      const titles = { r16: 'OITAVAS', qf: 'QUARTAS', sf: 'SEMI' };
+      const titles = { r16: 'ROUND OF 16', qf: 'QUARTERS', sf: 'SEMI' };
       const names = namesForSideRound(side, rid);
       const winners = state[side].winners[rid];
       lines.push('  ── ' + titles[rid] + ' ──');
@@ -1245,11 +1245,11 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   const fw = state.final.winner;
   lines.push(`  ${fw === 0 ? '★ ' : '  '}${lf}  vs  ${fw === 1 ? '★ ' : '  '}${rf}`);
   lines.push('');
-  lines.push('🏆 CAMPEÃO: ' + (championName() || '(a definir)'));
+  lines.push('🏆 CHAMPION: ' + (championName() || '(TBD)'));
   const text = lines.join('\n');
   navigator.clipboard.writeText(text).then(
-    () => { alert('Chave copiada pra área de transferência!'); },
-    () => { prompt('Copie manualmente:', text); }
+    () => { alert('Bracket copied to clipboard!'); },
+    () => { prompt('Copy manually:', text); }
   );
 });
 
