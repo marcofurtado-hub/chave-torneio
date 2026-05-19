@@ -961,10 +961,14 @@ function renderSide(side, roundId, count, container) {
       // no pair-top, just an outgoing horizontal line straight into the Final card
     }
 
+    // Continuous numbering across both sides: right side picks up where left ended
+    const matchNumOffset = side === 'right' ? count : 0;
+    const seedNumOffset  = side === 'right' ? count * 2 : 0;
+
     // Match ID badge
     const idEl = document.createElement('div');
     idEl.className = 'match-id';
-    idEl.innerHTML = `<span>${labels[roundId]}</span><span class="num">${m + 1}</span>`;
+    idEl.innerHTML = `<span>${labels[roundId]}</span><span class="num">${m + 1 + matchNumOffset}</span>`;
     matchEl.appendChild(idEl);
 
     // Players block
@@ -980,7 +984,7 @@ function renderSide(side, roundId, count, container) {
 
       const seed = document.createElement('div');
       seed.className = 'seed';
-      seed.textContent = roundId === 'r16' ? (slotIdx + 1) : '—';
+      seed.textContent = roundId === 'r16' ? (slotIdx + 1 + seedNumOffset) : '—';
       slot.appendChild(seed);
 
       const badge = document.createElement('div');
@@ -993,7 +997,7 @@ function renderSide(side, roundId, count, container) {
       input.type = 'text';
       if (roundId === 'r16') {
         input.value = state[side].players[slotIdx] || '';
-        input.placeholder = `Player ${slotIdx + 1}`;
+        input.placeholder = `Player ${slotIdx + 1 + seedNumOffset}`;
         input.addEventListener('input', () => {
           state[side].players[slotIdx] = input.value;
           save();
@@ -1229,12 +1233,13 @@ document.getElementById('exportBtn').addEventListener('click', () => {
       const winners = state[side].winners[rid];
       lines.push('  ── ' + titles[rid] + ' ──');
       const count = winners.length;
+      const matchOffset = side === 'right' ? count : 0;
       for (let m = 0; m < count; m++) {
         const a = names[m*2] || '(?)';
         const b = names[m*2+1] || '(?)';
         const w = winners[m];
         const mark = (i) => w === i ? '★ ' : '  ';
-        lines.push(`    ${rid.toUpperCase()}${m+1}: ${mark(0)}${a}  vs  ${mark(1)}${b}`);
+        lines.push(`    ${rid.toUpperCase()}${m+1+matchOffset}: ${mark(0)}${a}  vs  ${mark(1)}${b}`);
       }
     });
     lines.push('');
